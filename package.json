@@ -1,0 +1,24 @@
+{
+  "name": "forum-interactif",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "nuxi dev",
+    "build": "nuxi build",
+    "preview": "nuxi preview --hostname 0.0.0.0 --port 3000"
+  },
+  "dependencies": {
+    "nuxt": "latest",
+    "@pinia/nuxt": "latest",
+    "@sidebase/nuxt-session": "latest",
+    "vuetify": "latest",
+    "nuxt-server-utils": "latest",
+    "bcryptjs": "latest",
+    "mysql2": "latest",
+    "bluebird": "latest",
+    "vuetify-nuxt-module": "latest",
+    "vite-plugin-vuetify": "latest",
+    "sass": "latest",
+    "pinia": "latest"
+  }
+}
