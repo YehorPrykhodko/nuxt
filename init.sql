@@ -49,4 +49,4 @@ INSERT IGNORE INTO messages (sujet_id, user_id, contenu) VALUES
 (1, 1, 'Ceci est le premier message.'),
 (1, 2, 'Merci pour cet accueil !'),
 (2, 2, 'Quelles sont les règles du forum ?'),
-(3, 1, 'Quel est le message d'erreur exact ?');
+(3, 1, 'Quel est le message derreur exact ?');
