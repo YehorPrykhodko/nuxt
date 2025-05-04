@@ -2,9 +2,15 @@
 // Code généré par une IA – liste des forums (avec compteur de sujets)
 import { defineSQLHandler } from '~/server/utils/mysql'
 // server/api/some-endpoint.ts
-console.log('[API]', 'Loaded endpoint', __filename)
 
 export default defineSQLHandler(async (event) => {
+/* AUTOMATIC LOG */ 
+console.log(
+  '[API]',
+  event.method,
+  event.node.req.url,
+  { params: event.context?.params, query: event.context?.query }
+);
   const db = event.context.mysql
 
   // Création de la table au premier lancement

@@ -3,9 +3,15 @@
 import { defineSQLHandler } from '~/server/utils/mysql'
 import { getQuery, createError } from 'h3'
 // server/api/some-endpoint.ts
-console.log('[API]', 'Loaded endpoint', __filename)
 
 export default defineSQLHandler(async (event) => {
+/* AUTOMATIC LOG */ 
+console.log(
+  '[API]',
+  event.method,
+  event.node.req.url,
+  { params: event.context?.params, query: event.context?.query }
+);
   const q = getQuery(event)
   const forumId = Number(q.forumId)
   const page = Math.max(Number(q.page || 1), 1)

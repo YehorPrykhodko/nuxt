@@ -4,9 +4,15 @@ import bcrypt from 'bcryptjs'
 import { readBody, createError } from 'h3'
 import { defineSQLHandler } from '~/server/utils/mysql'
 // server/api/some-endpoint.ts
-console.log('[API]', 'Loaded endpoint', __filename)
 
 export default defineSQLHandler(async (event) => {
+/* AUTOMATIC LOG */ 
+console.log(
+  '[API]',
+  event.method,
+  event.node.req.url,
+  { params: event.context?.params, query: event.context?.query }
+);
   // Vérifie qu'on est connecté
   const sess = event.context.session
   if (!sess.user) {
@@ -14,6 +20,7 @@ export default defineSQLHandler(async (event) => {
   }
 
   const body = await readBody<{ oldPwd?: string; newPwd?: string }>(event)
+  console.log('[API] body:', body);
   const { oldPwd, newPwd } = body || {}
   if (!oldPwd || !newPwd) {
     throw createError({ statusCode: 400, statusMessage: 'Champs manquants' })

@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS sujets (
 );
 
 INSERT IGNORE INTO sujets (forum_id, user_id, titre) VALUES
-(1, 1, 'Bienvenue sur le forum'), (1, 2, 'Règles et infos'), (2, 1, 'Problème d'installation');
+(1, 1, 'Bienvenue sur le forum'), (1, 2, 'Règles et infos'), (2, 1, 'Problème dinstallation');
 
 CREATE TABLE IF NOT EXISTS messages (
   id INT AUTO_INCREMENT PRIMARY KEY,

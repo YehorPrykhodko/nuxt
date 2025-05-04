@@ -5,12 +5,19 @@ import { readBody, createError } from 'h3'
 // On importe le wrapper qui gère la connexion MySQL.
 import { defineSQLHandler } from '~/server/utils/mysql' // chemin relatif depuis /server/api
 // server/api/some-endpoint.ts
-console.log('[API]', 'Loaded endpoint', __filename)
 
 // Handler POST /api/users
 export default defineSQLHandler(async (event) => {
+/* AUTOMATIC LOG */ 
+console.log(
+  '[API]',
+  event.method,
+  event.node.req.url,
+  { params: event.context?.params, query: event.context?.query }
+);
   // Récupération du corps JSON
   const body = await readBody<{ login?: string; password?: string }>(event)
+  console.log('[API] body:', body);
   const { login, password } = body || {}
   if (!login || !password) {
     throw createError({ statusCode: 400, statusMessage: 'Champs manquants' })

@@ -4,10 +4,17 @@ import bcrypt from 'bcryptjs'
 import { readBody, createError } from 'h3'
 import { defineSQLHandler } from '~/server/utils/mysql'
 // server/api/some-endpoint.ts
-console.log('[API]', 'Loaded endpoint', __filename)
 
 export default defineSQLHandler(async (event) => {
+/* AUTOMATIC LOG */ 
+console.log(
+  '[API]',
+  event.method,
+  event.node.req.url,
+  { params: event.context?.params, query: event.context?.query }
+);
   const body = await readBody<{ login?: string; password?: string }>(event)
+  console.log('[API] body:', body);
   const { login, password } = body || {}
   if (!login || !password) {
     throw createError({ statusCode: 400, statusMessage: 'Champs manquants' })

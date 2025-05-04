@@ -3,14 +3,21 @@
 import { defineSQLHandler } from '~/server/utils/mysql'
 import { readBody, createError } from 'h3'
 // server/api/some-endpoint.ts
-console.log('[API]', 'Loaded endpoint', __filename)
 
 export default defineSQLHandler(async (event) => {
+/* AUTOMATIC LOG */ 
+console.log(
+  '[API]',
+  event.method,
+  event.node.req.url,
+  { params: event.context?.params, query: event.context?.query }
+);
   const sess = event.context.session
   if (!sess.user) {
     throw createError({ statusCode: 401, statusMessage: 'Connexion requise' })
   }
   const body = await readBody<{ forumId?: number; titre?: string; msg?: string }>(event)
+  console.log('[API] body:', body);
   if (!body?.forumId || !body.titre || !body.msg) {
     throw createError({ statusCode: 400, statusMessage: 'Champs manquants' })
   }
