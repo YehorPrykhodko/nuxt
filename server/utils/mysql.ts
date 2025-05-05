@@ -1,7 +1,7 @@
 // server/utils/mysql.ts
 // Code généré par une IA – utilitaire MySQL + wrapper d’API
 // Tous les commentaires sont en français pour la lecture.
-
+import { defineEventHandler } from 'h3'
 import mysql from 'mysql2/promise'
 import bluebird from 'bluebird'
 import type { Pool, PoolConnection } from 'mysql2/promise'

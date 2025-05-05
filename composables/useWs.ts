@@ -1,7 +1,6 @@
 // Положите или замените в composables/useWs.ts
 
 import { ref, onMounted } from 'vue'
-
 export function useWs() {
   const lastEvent = ref<{ type: string; payload: any } | null>(null)
   let ws: WebSocket | null = null

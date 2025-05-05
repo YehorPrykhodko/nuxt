@@ -1,43 +1,35 @@
 <template>
   <v-container>
     <v-row class="align-center">
-      <v-col>
-        <h1>Forum : {{ forumNom }}</h1>
-      </v-col>
+      <v-col><h1>Forum : {{ forumNom }}</h1></v-col>
       <v-col class="text-right">
-        <v-btn
-          v-if="sess.user"
-          color="primary"
-          @click="dialog = true"
-        >Nouveau sujet</v-btn>
+        <pre style="color: red">USER: {{ user.login }}</pre>
+        <v-btn v-if="user" color="primary" @click="dialog = true">
+          Nouveau sujet
+        </v-btn>
         <div v-else>
           <NuxtLink to="/login">Connecte-toi</NuxtLink> pour créer un sujet.
         </div>
       </v-col>
     </v-row>
 
-    <!-- Liste des sujets -->
     <v-row>
       <v-col cols="12" v-if="sujets.length === 0">
         Aucun sujet dans ce forum.
       </v-col>
-      <v-col
-        v-for="s in sujets"
-        :key="s.id"
-        cols="12"
-      >
+      <v-col v-for="s in sujets" :key="s.id" cols="12">
         <v-card class="mb-2">
           <v-card-title>
             <NuxtLink :to="`/sujet/${s.id}`">{{ s.titre }}</NuxtLink>
           </v-card-title>
           <v-card-subtitle>
-            {{ s.auteur }} – dernière réponse par {{ s.dernierAuteur }} le {{ new Date(s.derniereDate).toLocaleString() }}
+            {{ s.auteur }} – dernière réponse par {{ s.dernierAuteur }}
+            le {{ new Date(s.derniereDate).toLocaleString() }}
           </v-card-subtitle>
         </v-card>
       </v-col>
     </v-row>
 
-    <!-- Pagination -->
     <v-pagination
       v-model="page"
       :length="pages"
@@ -45,9 +37,7 @@
       class="my-4"
     />
 
-    <!-- Dialog création -->
     <v-dialog v-model="dialog" max-width="600">
-      <template v-slot:activator="{ on, attrs }"></template>
       <v-card>
         <v-card-title>Nouveau sujet</v-card-title>
         <v-card-text>
@@ -69,44 +59,74 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useFetch } from '#imports'
 import { useWs } from '~/composables/useWs'
+import { useAuthStore } from '~/stores/authStore'
+import { computed } from 'vue'
+
+const auth = useAuthStore()
+const user = computed(() => auth.user)
+console.log(auth)
 
 const route = useRoute()
 const forumId = Number(route.params.id)
-console.log('[PAGE forum] forumId =', forumId)
+const forumNom = ref('…chargement…')
 
-const titre = ref('')
-const msg = ref('')
+const sujets = ref<any[]>([])
+const page   = ref(1)
+const pages  = ref(1)
+const titre  = ref('')
+const msg    = ref('')
 const dialog = ref(false)
 
 const { connect, send, lastEvent } = useWs()
 
-onMounted(() => {
-  console.log('[PAGE forum] onMounted')
+const { data: forumData } = await useFetch(`/api/forums/${forumId}`)
+forumNom.value = forumData.value.nom
+
+async function reload() {
+  const res: any = await $fetch('/api/sujets', {
+    query: { forumId, page: page.value },
+    headers: {
+      Authorization: `Bearer ${auth.token}`
+    }
+  })
+  sujets.value = res.sujets
+  pages.value  = res.pages
+}
+
+onMounted(async () => {
   connect()
+  await reload()
 })
 
 watch(lastEvent, evt => {
-  console.log('[WS EVENT forum]', evt)
   if (evt?.type === 'newSujet' && evt.payload.forumId === forumId) {
-    // reload list…
+    reload()
   }
 })
+watch(page, () => reload())
 
 async function createSujet() {
-  console.log('[forum] createSujet', titre.value, msg.value)
   await $fetch('/api/sujets', {
     method: 'POST',
-    credentials: 'include',
-    body: { forumId, titre: titre.value, msg: msg.value }
+    headers: {
+      // auth.token — Pinia ref, в котором у вас JWT
+      Authorization: `Bearer ${auth.token}`
+    },
+    body: {
+      forumId,
+      titre: titre.value,
+      msg:   msg.value
+    }
   })
-  console.log('[forum] Sujet created')
-  send('newSujet', { forumId })
   titre.value = ''
   msg.value = ''
+  dialog.value = false
+  send('newSujet', { forumId })
+  reload()
 }
 </script>
-
 
 <style scoped>
 h1 { margin-bottom: 1rem; }

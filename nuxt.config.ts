@@ -7,14 +7,20 @@ export default defineNuxtConfig({
   // Activation du rendu côté serveur (SSR)
   ssr: true,
 
-  // Modules Nuxt à charger
-  modules: [
-    '@pinia/nuxt',             // Gestion d'état centralisée
-    '@sidebase/nuxt-session',  // Sessions utilisateur
-    'vuetify-nuxt-module',           // Vuetify 3 pour l'UI
-    'nuxt-server-utils'        // Utilitaires serveur (MySQL & co)
-  ],
+  nitro: {
+    plugins: ['~/server/middleware/auth.ts'] // или через server/middleware/
+  },
 
+  // Modules Nuxt à charger
+  modules: [// Gestion d'état centralisée
+  '@pinia/nuxt', // Sessions utilisateur
+  '@sidebase/nuxt-session', // Vuetify 3 pour l'UI
+  'vuetify-nuxt-module', // Utilitaires serveur (MySQL & co)
+  'nuxt-server-utils', 'nuxt-auth-utils'],
+  auth: {
+    origin: process.env.AUTH_ORIGIN,
+    // другие настройки
+  },
   // Configuration de Vuetify
   vuetify: {
     moduleOptions: {

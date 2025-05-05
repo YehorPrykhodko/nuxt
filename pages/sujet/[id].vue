@@ -2,7 +2,6 @@
   <v-container>
     <h1>Sujet : {{ titreSujet }}</h1>
 
-    <!-- Liste des messages -->
     <v-row>
       <v-col v-for="m in messages" :key="m.id" cols="12">
         <v-card class="mb-2">
@@ -12,8 +11,7 @@
               <small>le {{ new Date(m.created_at).toLocaleString() }}</small>
             </div>
             <v-spacer />
-            <!-- Actions édition/suppression -->
-            <template v-if="m.user_id === sess.user?.id || sess.user?.role === 'admin'">
+            <template v-if="m.user_id === session?.id || session?.role === 'admin'">
               <v-btn icon small @click="startEdit(m)"><v-icon>mdi-pencil</v-icon></v-btn>
               <v-btn icon small color="error" @click="supprimeMsg(m.id)"><v-icon>mdi-delete</v-icon></v-btn>
             </template>
@@ -30,11 +28,9 @@
       </v-col>
     </v-row>
 
-    <!-- Pagination -->
     <v-pagination v-model="page" :length="pages" @input="reload" class="my-4" />
 
-    <!-- Formulaire de réponse -->
-    <v-card v-if="sess.user">
+    <v-card v-if="session">
       <v-card-title>Répondre</v-card-title>
       <v-card-text>
         <v-textarea v-model="nouveauMsg" label="Votre message" rows="4" />
@@ -50,44 +46,103 @@
   </v-container>
 </template>
 
+
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useFetch } from '#imports'
 import { useWs } from '~/composables/useWs'
+import { useAuthStore } from '~/stores/authStore'  // <- наш Pinia store
+
+const auth = useAuthStore()
+const session = computed(() => auth.user) // <- теперь session — это просто user-объект
 
 const route = useRoute()
 const sujetId = Number(route.params.id)
-console.log('[PAGE sujet] sujetId =', sujetId)
 
-const nouveauMsg = ref('')
 const { connect, send, lastEvent } = useWs()
 
-onMounted(() => {
-  console.log('[PAGE sujet] onMounted')
-  connect()
-})
+const { data: sujetData } = await useFetch(`/api/sujets/${sujetId}`)
+const titreSujet = ref(sujetData.value.titre)
 
-watch(lastEvent, evt => {
-  console.log('[WS EVENT sujet]', evt)
-  if (evt?.type === 'newMessage' && evt.payload.sujetId === sujetId) {
-    // reload messages…
-  }
-})
+const messages    = ref<any[]>([])
+const page        = ref(1)
+const pages       = ref(1)
+const nouveauMsg  = ref('')
+const editId      = ref<number | null>(null)
+const editContenu = ref('')
+
+async function reload() {
+  const res: any = await $fetch('/api/messages', {
+    query: { sujetId, page: page.value },
+    credentials: 'include'
+  })
+  messages.value = res.messages
+  pages.value = res.pages
+}
 
 async function postMsg() {
-  console.log('[sujet] postMsg', nouveauMsg.value)
   await $fetch('/api/messages', {
     method: 'POST',
-    credentials: 'include',
+    headers: {
+      Authorization: `Bearer ${auth.token}`
+    },
     body: { sujetId, contenu: nouveauMsg.value }
   })
-  console.log('[sujet] Message posted')
   send('newMessage', { sujetId })
   nouveauMsg.value = ''
 }
+
+function startEdit(m: any) {
+  editId.value = m.id
+  editContenu.value = m.contenu
+}
+
+function cancelEdit() {
+  editId.value = null
+  editContenu.value = ''
+}
+
+async function valideEdit(id: number) {
+  await $fetch(`/api/messages/${id}`, {
+    method: 'PATCH',
+    credentials: 'include',
+    body: { contenu: editContenu.value }
+  })
+  send('updateMessage', { sujetId })
+  editId.value = null
+  reload()
+}
+
+async function supprimeMsg(id: number) {
+  await $fetch(`/api/messages/${id}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${auth.token}`
+    }
+  })
+  send('deleteMessage', { sujetId })
+  reload()
+}
+
+onMounted(() => {
+  connect()
+  reload()
+})
+
+watch(lastEvent, evt => {
+  if (
+    ['newMessage', 'updateMessage', 'deleteMessage'].includes(evt?.type!) &&
+    evt.payload.sujetId === sujetId
+  ) {
+    reload()
+  }
+})
+watch(page, () => reload())
 </script>
 
 
+
 <style scoped>
-h1 { margin-bottom: 1rem }
+h1 { margin-bottom: 1rem; }
 </style>

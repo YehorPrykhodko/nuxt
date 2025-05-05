@@ -1,23 +1,23 @@
-# Dockerfile pour le forum interactif Nuxt 3
-FROM node:18-alpine
+# Используем официальный Node 18 образ
+FROM node:18
 
-# Dossier de travail
+# Рабочая директория в контейнере
 WORKDIR /app
 
-# Copier package.json & lock pour installer les dépendances
+# Копируем только package.json + lock-файл, чтобы кешировать npm install
 COPY package*.json ./
 
-# Installer les dépendances
-RUN npm install
+# Устанавливаем зависимости (bcryptjs вместо argon2, Vuetify, mysql2 и т.п.)
+RUN npm install --production
 
-# Copier le reste du code
+# Копируем весь остальной код
 COPY . .
 
-# Builder l'application Nuxt
+# Собираем Nuxt-приложение
 RUN npm run build
 
-# Exposer le port
+# Открываем порт 3000
 EXPOSE 3000
 
-# Démarrer l'application en mode production
+# Запускаем приложение в режиме Preview (production)
 CMD ["npx", "nuxi", "preview", "--hostname", "0.0.0.0", "--port", "3000"]

@@ -1,64 +1,59 @@
 <template>
-  <v-container class="fill-height" fluid>
-    <v-row align="center" justify="center">
-      <v-col cols="12" sm="8" md="4">
-        <v-card>
-          <v-card-title>Inscription</v-card-title>
-          <v-card-text>
-            <v-form ref="form" @submit.prevent="onSubmit">
-              <v-text-field
-                v-model="login"
-                label="Login"
-                required
-              />
-              <v-text-field
-                v-model="password"
-                label="Mot de passe"
-                type="password"
-                required
-              />
-              <v-btn
-                type="submit"
-                color="primary"
-                :loading="loading"
-                class="mt-4"
-              >
-                S'inscrire
-              </v-btn>
-            </v-form>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
+  <v-container>
+    <h1>Inscription</h1>
+    <v-form @submit.prevent="doRegister">
+      <v-text-field
+        v-model="loginModel"
+        label="Login"
+        required
+      />
+      <v-text-field
+        v-model="passwordModel"
+        label="Mot de passe"
+        type="password"
+        autocomplete="new-password"
+        required
+      />
+      <v-btn type="submit" color="primary">S'inscrire</v-btn>
+    </v-form>
   </v-container>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '~/stores/authStore' // ← твой Pinia store
 
-const login = ref('')
-const password = ref('')
-const loading = ref(false)
-const router = useRouter()
+const auth = useAuthStore()
+const loginModel    = ref('')
+const passwordModel = ref('')
+const router        = useRouter()
 
-async function onSubmit() {
-  console.log('[REGISTER] Submitting', login.value)
-  loading.value = true
-  try {
-    const res = await $fetch('/api/users', {
-      method: 'POST',
-      body: { login: login.value, password: password.value }
-    })
-    console.log('[REGISTER] Response', res)
-    if (res.ok) {
-      router.push('/login')
-    }
-  } catch (e) {
-    console.error('[REGISTER] Error', e)
-  } finally {
-    loading.value = false
-  }
+async function doRegister() {
+  console.log('[REGISTER] Submitting', loginModel.value)
+
+  // Сначала создаём пользователя
+  await $fetch('/api/users', {
+    method: 'POST',
+    body: {
+      login: loginModel.value,
+      password: passwordModel.value,
+    },
+  })
+
+  // Затем сразу логинимся
+  const res = await $fetch('/api/login', {
+    method: 'POST',
+    body: {
+      login: loginModel.value,
+      password: passwordModel.value,
+    },
+  })
+
+  // Сохраняем токен и пользователя в Pinia store
+  auth.login(res.user, res.token)
+
+  // Перенаправляем на главную
+  router.push('/')
 }
 </script>
-

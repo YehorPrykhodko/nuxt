@@ -3,13 +3,13 @@
 import { defineSQLHandler } from '~/server/utils/mysql'
 import { getQuery, createError } from 'h3'
 // server/api/some-endpoint.ts
-
+import { getRequestURL } from 'h3'
 export default defineSQLHandler(async (event) => {
 /* AUTOMATIC LOG */ 
 console.log(
   '[API]',
   event.method,
-  event.node.req.url,
+  getRequestURL(event).toString(),
   { params: event.context?.params, query: event.context?.query }
 );
   const q = getQuery(event)

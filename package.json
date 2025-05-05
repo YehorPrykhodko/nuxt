@@ -8,17 +8,19 @@
     "preview": "nuxi preview --hostname 0.0.0.0 --port 3000"
   },
   "dependencies": {
-    "nuxt": "latest",
     "@pinia/nuxt": "latest",
     "@sidebase/nuxt-session": "latest",
-    "vuetify": "latest",
-    "nuxt-server-utils": "latest",
-    "bcryptjs": "latest",
-    "mysql2": "latest",
+    "bcryptjs": "^3.0.2",
     "bluebird": "latest",
-    "vuetify-nuxt-module": "latest",
-    "vite-plugin-vuetify": "latest",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "latest",
+    "nuxt": "latest",
+    "nuxt-auth-utils": "^0.5.20",
+    "nuxt-server-utils": "latest",
+    "pinia": "latest",
     "sass": "latest",
-    "pinia": "latest"
+    "vite-plugin-vuetify": "latest",
+    "vuetify": "latest",
+    "vuetify-nuxt-module": "latest"
   }
 }

@@ -2,13 +2,13 @@
 // Code généré par une IA – liste des forums (avec compteur de sujets)
 import { defineSQLHandler } from '~/server/utils/mysql'
 // server/api/some-endpoint.ts
-
+import { getRequestURL } from 'h3'
 export default defineSQLHandler(async (event) => {
 /* AUTOMATIC LOG */ 
 console.log(
   '[API]',
   event.method,
-  event.node.req.url,
+  getRequestURL(event).toString(),
   { params: event.context?.params, query: event.context?.query }
 );
   const db = event.context.mysql

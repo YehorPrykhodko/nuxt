@@ -1,33 +1,29 @@
 // server/api/login.post.ts
-// Code généré par une IA – connexion utilisateur
 import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
 import { readBody, createError } from 'h3'
 import { defineSQLHandler } from '~/server/utils/mysql'
-// server/api/some-endpoint.ts
+
+const JWT_SECRET = process.env.JWT_SECRET 
 
 export default defineSQLHandler(async (event) => {
-/* AUTOMATIC LOG */ 
-console.log(
-  '[API]',
-  event.method,
-  event.node.req.url,
-  { params: event.context?.params, query: event.context?.query }
-);
-  const body = await readBody<{ login?: string; password?: string }>(event)
-  console.log('[API] body:', body);
-  const { login, password } = body || {}
+  console.log('[API] POST /api/login')
+
+  const { login, password } = await readBody<{ login?: string; password?: string }>(event)
   if (!login || !password) {
     throw createError({ statusCode: 400, statusMessage: 'Champs manquants' })
   }
 
-  console.log('[API]', 'Body received:', body)
-
   const db = event.context.mysql
 
-  // Vérifie la présence du compte admin par défaut
+  // Crée le compte admin par défaut (optionnel)
   await db.execute(`
     INSERT IGNORE INTO users (login, password, role)
-    VALUES ('admin', '$2b$12$tlTdIrnZJYq48QPmkWK3pOKufFGy22s34cA2WXSX.bBpnHHTQh2WW', 'admin')
+    VALUES (
+      'admin',
+      '$2b$12$tlTdIrnZJYq48QPmkWK3pOKufFGy22s34cA2WXSX.bBpnHHTQh2WW',
+      'admin'
+    )
   `)
 
   const [rows] = await db.execute<any[]>(
@@ -38,14 +34,22 @@ console.log(
     throw createError({ statusCode: 401, statusMessage: 'Identifiants invalides' })
   }
 
-  const usr = rows[0]
-  const ok = await bcrypt.compare(password, usr.password)
-  if (!ok) {
+  const user = rows[0]
+  const valid = await bcrypt.compare(password, user.password)
+  if (!valid) {
     throw createError({ statusCode: 401, statusMessage: 'Identifiants invalides' })
   }
 
-  // On stocke les infos essentielles en session
-  event.context.session.user = { id: usr.id, login, role: usr.role }
+  // Génère un JWT
+  const token = jwt.sign(
+    { id: user.id, login, role: user.role },
+    JWT_SECRET,
+    { expiresIn: '7d' }
+  )
 
-  return { ok: true, user: { id: usr.id, login, role: usr.role } }
+  return {
+    ok: true,
+    user: { id: user.id, login, role: user.role },
+    token
+  }
 })
