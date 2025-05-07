@@ -1,4 +1,4 @@
-// server/api/forums.post.ts       ← création de forum
+// server/api/forums/[id].patch.ts   ← renommage
 import { readBody, createError } from 'h3'
 import { defineSQLHandler }      from '~/server/utils/mysql'
 
@@ -8,15 +8,13 @@ export default defineSQLHandler(async (event) => {
     throw createError({ statusCode: 403, statusMessage: 'Accès refusé' })
   }
 
+  const { id } = event.context.params
   const { nom } = await readBody<{nom?:string}>(event)
   if (!nom) {
-    throw createError({ statusCode: 400, statusMessage: 'Nom du forum requis' })
+    throw createError({ statusCode: 400, statusMessage: 'Nom requis' })
   }
 
   const db = event.context.mysql
-  const [res] = await db.execute<any>(
-    'INSERT INTO forums (nom) VALUES (?)',
-    [nom]
-  )
-  return { ok: true, id: (res as any).insertId }
+  await db.execute('UPDATE forums SET nom = ? WHERE id = ?', [nom, id])
+  return { ok: true }
 })
