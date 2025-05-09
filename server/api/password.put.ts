@@ -1,36 +1,42 @@
-// server/api/password.put.ts
-// Code généré par une IA – changement de mot de passe
 import bcrypt from 'bcryptjs'
-import { readBody, createError } from 'h3'
-import { defineSQLHandler } from '~/server/utils/mysql'
-// server/api/some-endpoint.ts
-import { getRequestURL } from 'h3'
-export default defineSQLHandler(async (event) => {
-/* AUTOMATIC LOG */ 
-console.log(
-  '[API]',
-  event.method,
-  getRequestURL(event).toString(),
-  { params: event.context?.params, query: event.context?.query }
-);
-  // Vérifie qu'on est connecté
-  const sess = event.context.session
-  if (!sess.user) {
-    throw createError({ statusCode: 401, statusMessage: 'Non connecté' })
+import { readBody, getHeader, createError, getRequestURL } from 'h3'
+import jwt from 'jsonwebtoken'
+import { jwtSecret } from '~/server/config/auth'
+import { defineWrappedResponseHandler } from '~/server/utils/mysql'
+
+console.log('[API] password.put loaded')
+
+export default defineWrappedResponseHandler(async (event) => {
+  console.log(
+    '[API]',
+    event.method,
+    getRequestURL(event).toString(),
+    { params: event.context?.params, query: event.context?.query }
+  )
+
+  const authHeader = getHeader(event, 'Authorization')
+  if (!authHeader) {
+    throw createError({ statusCode: 401, statusMessage: 'Token requis' })
+  }
+
+  let payload: any
+  try {
+    const token = authHeader.split(' ')[1]
+    payload = jwt.verify(token, jwtSecret)
+  } catch {
+    throw createError({ statusCode: 403, statusMessage: 'Token invalide' })
   }
 
   const body = await readBody<{ oldPwd?: string; newPwd?: string }>(event)
-  console.log('[API] body:', body);
   const { oldPwd, newPwd } = body || {}
   if (!oldPwd || !newPwd) {
     throw createError({ statusCode: 400, statusMessage: 'Champs manquants' })
   }
-console.log('[API]', 'Body received:', body)
 
   const db = event.context.mysql
   const [rows] = await db.execute<any[]>(
     'SELECT password FROM users WHERE id = ?',
-    [sess.user.id]
+    [payload.id]
   )
   if (!Array.isArray(rows) || rows.length === 0) {
     throw createError({ statusCode: 404, statusMessage: 'Utilisateur introuvable' })
@@ -42,7 +48,7 @@ console.log('[API]', 'Body received:', body)
   }
 
   const hash = await bcrypt.hash(newPwd, 10)
-  await db.execute('UPDATE users SET password = ? WHERE id = ?', [hash, sess.user.id])
+  await db.execute('UPDATE users SET password = ? WHERE id = ?', [hash, payload.id])
 
   return { ok: true }
 })

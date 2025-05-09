@@ -27,9 +27,7 @@
         </v-card>
       </v-col>
     </v-row>
-
-    <v-pagination v-model="page" :length="pages" @input="reload" class="my-4" />
-
+    
     <v-card v-if="session">
       <v-card-title>Répondre</v-card-title>
       <v-card-text>
@@ -48,38 +46,44 @@
 
 
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { useFetch } from '#imports'
+import { useAuthStore } from '~/stores/authStore'
 import { useWs } from '~/composables/useWs'
-import { useAuthStore } from '~/stores/authStore'  // <- наш Pinia store
 
 const auth = useAuthStore()
-const session = computed(() => auth.user) // <- теперь session — это просто user-объект
+const session = computed(() => auth.user)
 
 const route = useRoute()
 const sujetId = Number(route.params.id)
 
-const { connect, send, lastEvent } = useWs()
-
-const { data: sujetData } = await useFetch(`/api/sujets/${sujetId}`)
-const titreSujet = ref(sujetData.value.titre)
-
-const messages    = ref<any[]>([])
-const page        = ref(1)
-const pages       = ref(1)
-const nouveauMsg  = ref('')
-const editId      = ref<number | null>(null)
+const titreSujet = ref('')
+const messages = ref<any[]>([])
+const nouveauMsg = ref('')
+const editId = ref<number | null>(null)
 const editContenu = ref('')
 
-async function reload() {
-  const res: any = await $fetch('/api/messages', {
-    query: { sujetId, page: page.value },
-    credentials: 'include'
-  })
+const { connect, send, lastEvent } = useWs()
+
+async function fetchSujet() {
+  const res: any = await $fetch(`/api/sujets/${sujetId}`)
+  titreSujet.value = res.titre
   messages.value = res.messages
-  pages.value = res.pages
 }
+
+onMounted(async () => {
+  connect()
+  await fetchSujet()
+})
+
+watch(lastEvent, evt => {
+  if (
+    ['newMessage', 'updateMessage', 'deleteMessage'].includes(evt?.type!) &&
+    evt.payload.sujetId === sujetId
+  ) {
+    fetchSujet()
+  }
+})
 
 async function postMsg() {
   await $fetch('/api/messages', {
@@ -111,7 +115,7 @@ async function valideEdit(id: number) {
   })
   send('updateMessage', { sujetId })
   editId.value = null
-  reload()
+  fetchSujet()
 }
 
 async function supprimeMsg(id: number) {
@@ -122,23 +126,8 @@ async function supprimeMsg(id: number) {
     }
   })
   send('deleteMessage', { sujetId })
-  reload()
+  fetchSujet()
 }
-
-onMounted(() => {
-  connect()
-  reload()
-})
-
-watch(lastEvent, evt => {
-  if (
-    ['newMessage', 'updateMessage', 'deleteMessage'].includes(evt?.type!) &&
-    evt.payload.sujetId === sujetId
-  ) {
-    reload()
-  }
-})
-watch(page, () => reload())
 </script>
 
 

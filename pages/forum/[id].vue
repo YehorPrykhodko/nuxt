@@ -30,13 +30,6 @@
       </v-col>
     </v-row>
 
-    <v-pagination
-      v-model="page"
-      :length="pages"
-      @input="reload"
-      class="my-4"
-    />
-
     <v-dialog v-model="dialog" max-width="600">
       <v-card>
         <v-card-title>Nouveau sujet</v-card-title>
@@ -57,43 +50,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useFetch } from '#imports'
-import { useWs } from '~/composables/useWs'
 import { useAuthStore } from '~/stores/authStore'
-import { computed } from 'vue'
+import { useWs } from '~/composables/useWs'
 
 const auth = useAuthStore()
 const user = computed(() => auth.user)
-console.log(auth)
 
 const route = useRoute()
 const forumId = Number(route.params.id)
-const forumNom = ref('…chargement…')
 
+const forumNom = ref('…chargement…')
 const sujets = ref<any[]>([])
-const page   = ref(1)
-const pages  = ref(1)
 const titre  = ref('')
 const msg    = ref('')
 const dialog = ref(false)
 
 const { connect, send, lastEvent } = useWs()
-
-const { data: forumData } = await useFetch(`/api/forums/${forumId}`)
-forumNom.value = forumData.value.nom
-
-async function reload() {
-  const res: any = await $fetch('/api/sujets', {
-    query: { forumId, page: page.value },
-    headers: {
-      Authorization: `Bearer ${auth.token}`
-    }
-  })
-  sujets.value = res.sujets
-  pages.value  = res.pages
-}
 
 onMounted(async () => {
   connect()
@@ -105,13 +80,17 @@ watch(lastEvent, evt => {
     reload()
   }
 })
-watch(page, () => reload())
+
+async function reload() {
+  const res: any = await $fetch(`/api/forums/${forumId}`)
+  forumNom.value = res.nom
+  sujets.value = res.sujets
+}
 
 async function createSujet() {
   await $fetch('/api/sujets', {
     method: 'POST',
     headers: {
-      // auth.token — Pinia ref, в котором у вас JWT
       Authorization: `Bearer ${auth.token}`
     },
     body: {
@@ -127,6 +106,7 @@ async function createSujet() {
   reload()
 }
 </script>
+
 
 <style scoped>
 h1 { margin-bottom: 1rem; }

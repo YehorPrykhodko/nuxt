@@ -67,7 +67,6 @@
   }
   
   onMounted(() => {
-    auth.initFromStorage()
     loadForums()
   })
   

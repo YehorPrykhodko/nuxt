@@ -1,16 +1,11 @@
 // server/utils/jwt.ts
 import jwt from 'jsonwebtoken'
+import { jwtSecret } from '~/server/config/auth'
 
-const SECRET = process.env.JWT_SECRET
-
-export function signJWT(payload: object) {
-  return jwt.sign(payload, SECRET, { expiresIn: '1h' })
+export function signJWT(payload: object): string {
+  return jwt.sign(payload, jwtSecret, { expiresIn: '1h' })
 }
 
-export function verifyJWT(token: string): Promise<any> {
-  return new Promise((resolve, reject) => {
-    jwt.verify(token, SECRET, (err, decoded) =>
-      err ? reject(err) : resolve(decoded)
-    )
-  })
+export function verifyJWT(token: string): any {
+  return jwt.verify(token, jwtSecret)
 }

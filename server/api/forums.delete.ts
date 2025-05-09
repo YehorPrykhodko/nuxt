@@ -1,34 +1,46 @@
-// server/api/forums.delete.ts
-// Code généré par une IA – suppression forum (admin)
-import { defineSQLHandler } from '~/server/utils/mysql'
-import { readBody, createError } from 'h3'
-import { getRequestURL } from 'h3'
-// server/api/some-endpoint.ts
-console.log('[API] forums.delete loaded');
-export default defineSQLHandler(async (event) => {
-/* AUTOMATIC LOG */ 
-console.log(
-  '[API]',
-  event.method,
-  getRequestURL(event).toString(),
-  { params: event.context?.params, query: event.context?.query }
-)
-  const sess = event.context.session
-  if (!sess.user || sess.user.role !== 'admin') {
+import { readBody, getHeader, createError, getRequestURL } from 'h3'
+import jwt from 'jsonwebtoken'
+import { jwtSecret } from '~/server/config/auth'
+import { defineWrappedResponseHandler } from '~/server/utils/mysql'
+
+console.log('[API] forums.delete loaded')
+
+export default defineWrappedResponseHandler(async (event) => {
+  console.log(
+    '[API]',
+    event.method,
+    getRequestURL(event).toString(),
+    { params: event.context?.params, query: event.context?.query }
+  )
+
+  const authHeader = getHeader(event, 'Authorization')
+  if (!authHeader) {
+    throw createError({ statusCode: 401, statusMessage: 'Token requis' })
+  }
+
+  let payload: any
+  try {
+    const token = authHeader.split(' ')[1]
+    payload = jwt.verify(token, jwtSecret)
+  } catch {
+    throw createError({ statusCode: 403, statusMessage: 'Token invalide' })
+  }
+
+  if (payload.role !== 'admin') {
     throw createError({ statusCode: 403, statusMessage: 'Accès refusé' })
   }
+
   const body = await readBody<{ id?: number }>(event)
-  console.log('[API] body:', body);
   if (!body?.id) {
     throw createError({ statusCode: 400, statusMessage: 'ID manquant' })
   }
 
-console.log('[API]', 'Body received:', body)
-
   const db = event.context.mysql
-  // Cascade: suppression sujets + messages
-  await db.execute('DELETE FROM messages WHERE sujet_id IN (SELECT id FROM sujets WHERE forum_id = ?)', [body.id])
+  await db.execute(
+    'DELETE FROM messages WHERE sujet_id IN (SELECT id FROM sujets WHERE forum_id = ?)', [body.id]
+  )
   await db.execute('DELETE FROM sujets WHERE forum_id = ?', [body.id])
   await db.execute('DELETE FROM forums WHERE id = ?', [body.id])
+
   return { ok: true }
 })

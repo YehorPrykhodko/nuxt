@@ -1,11 +1,21 @@
-// /middleware/auth.global.ts   ← Nuxt route middleware, runs on every page navigation
-import { defineNuxtRouteMiddleware, useCookie, navigateTo } from '#imports'
+// middleware/auth.global.ts
+import { defineNuxtRouteMiddleware, navigateTo } from '#imports'
+import { verifyJWT } from '~/server/utils/jwt'
 
-export default defineNuxtRouteMiddleware(async (to, from) => {
-  const token = useCookie('auth_token').value
-  // if (!token && to.path !== '/login' && to.path !== '/register') {
-  //   // if no token, redirect to login
+export default defineNuxtRouteMiddleware(async (to) => {
+  const publicPaths = ['/login', '/register']
+  if (publicPaths.includes(to.path)) return
+
+  // читаем только из заголовка
+  // const authHeader = useRequestHeaders()['authorization'] || ''
+  // const token = authHeader.split(' ')[1]
+  // if (!token) {
   //   return navigateTo('/login')
   // }
-  // optionally, you can validate token here...
+
+  try {
+    // await verifyJWT(token)
+  } catch {
+    // return navigateTo('/login')
+  }
 })

@@ -1,72 +1,48 @@
-// nuxt.config.ts
-// Code généré par une IA – configuration initiale du forum interactif
-
+// nuxt.config.ts – глобальная конфигурация Nuxt 3 + Vuetify + Pinia + Dotenv
 import { defineNuxtConfig } from 'nuxt/config'
 
 export default defineNuxtConfig({
-  // Activation du rendu côté serveur (SSR)
-  ssr: true,
+  devtools : true,
 
-  nitro: {
-    plugins: ['~/server/middleware/auth.ts'] // или через server/middleware/
+  // 1) Рендерим на сервере (SSR) + Nitro "node-server"
+  ssr      : true,
+  nitro    : {
+    preset : 'node-server'
   },
 
-  // Modules Nuxt à charger
-  modules: [// Gestion d'état centralisée
-  '@pinia/nuxt', // Sessions utilisateur
-  '@sidebase/nuxt-session', // Vuetify 3 pour l'UI
-  'vuetify-nuxt-module', // Utilitaires serveur (MySQL & co)
-  'nuxt-server-utils', 'nuxt-auth-utils'],
-  auth: {
-    origin: process.env.AUTH_ORIGIN,
-    // другие настройки
-  },
-  // Configuration de Vuetify
+  // 2) Плагины
+  modules  : [
+    '@pinia/nuxt',     // хранилище
+    'vuetify-nuxt-module'   
+  ],
   vuetify: {
-    moduleOptions: {
-      /* module specific options */
-    },
     vuetifyOptions: {
-    // Exemple : fichier SCSS global pour les variables
-    styles: {
-      configFile: 'styles/settings.scss'
-    
-    }
-  },
-    defaultAssets: {
-      font: { family: 'Roboto' }
-    },
-    theme: {
-      defaultTheme: 'light'
+      ssr: true // это обязательно для серверного рендеринга
     }
   },
 
-  // Configuration Nitro (backend Node)
-  nitro: {
-    experimental: {
-      websocket: true // WebSocket natif pour le temps réel
-    }
+  // 3) Aliases для server/utils
+  alias    : {
+    '~/utils' : '/server/utils'
   },
 
-  // Variables d'environnement côté serveur
-  runtimeConfig: {
-    mysqlHost: process.env.MYSQL_HOST || 'db',
-    mysqlUser: process.env.MYSQL_USER || 'root',
-    mysqlPass: process.env.MYSQL_PASS || 'root',
-    mysqlDb:   process.env.MYSQL_DB   || 'forum',
-    public: {
-      // Paramètres exposés au navigateur si nécessaire
-    }
-  },
+  // 4) Runtime env, доступен из process.env / useRuntimeConfig()
+  // runtimeConfig: {
+  //   JWT_SECRET : process.env.JWT_SECRET || 'dev‑secret',
+  //   DB_HOST    : process.env.DB_HOST    || 'db',
+  //   DB_USER    : process.env.DB_USER    || 'root',
+  //   DB_PASS    : process.env.DB_PASS    || 'root',
+  //   DB_NAME    : process.env.DB_NAME    || 'forum'
+  // },
 
-  // TypeScript strict
-  typescript: {
-    strict: true
+  // 5) CSS + Vuetify (ведь у вас Vuetify 3)
+  css: [
+    'vuetify/styles',
+  ],
+  build: {
+    transpile: ['vuetify']
   },
-
-  app: {
-    $fetch: {
-      credentials: 'include'
-    }
+  vite: {
+    define: { 'process.env.DEBUG': false }
   }
 })

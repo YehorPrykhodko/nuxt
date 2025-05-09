@@ -8,7 +8,7 @@
       >
         <v-card class="ma-2">
           <v-card-title>
-            <NuxtLink :to="`/forum/${forum.id}`">{{ forum.nom }}</NuxtLink>
+            <NuxtLink :to="`/forum/${forum.id}`">Forum: {{ forum.nom }}</NuxtLink>
           </v-card-title>
           <v-card-subtitle>
             {{ forum.sujets }} sujet{{ forum.sujets > 1 ? 's' : '' }}
@@ -20,8 +20,7 @@
 </template>
 
 <script setup lang="ts">
-// Page d'accueil – récupération de la liste des forums
-import { useFetch } from '#app'
+import { useFetch } from '#imports'
 
 interface Forum {
   id: number
@@ -29,7 +28,6 @@ interface Forum {
   sujets: number
 }
 
-// Récupération SSR des forums
 const { data, error } = await useFetch<{ forums: Forum[] }>('/api/forums')
 
 if (error.value) {
@@ -38,7 +36,3 @@ if (error.value) {
 
 const forums = data.value?.forums || []
 </script>
-
-<style scoped>
-/* Styles minimaux */
-</style>

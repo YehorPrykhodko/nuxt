@@ -1,8 +1,17 @@
-// ~/plugins/auth-init.client.ts
-import { defineNuxtPlugin } from '#app'
-import { useAuthStore }     from '~/stores/authStore'
+import { defineNuxtPlugin, useAuthStore } from '#imports'
 
 export default defineNuxtPlugin(() => {
   const auth = useAuthStore()
-  auth.initFromStorage()
+  return {
+    provide: {},
+    hooks: {
+      'vue:setup': () => {
+        // noop
+      }
+    },
+    // Настраиваем глобальный $fetch
+    setup() {
+      return {}
+    }
+  }
 })

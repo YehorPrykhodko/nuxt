@@ -1,49 +1,55 @@
 // server/api/sujets.post.ts
-import { readBody, createError } from 'h3'
-import { defineSQLHandler }      from '~/server/utils/mysql'
-import { verifyJWT }             from '~/server/utils/jwt'
+import { defineWrappedResponseHandler } from '~/server/utils/mysql'
+import { readBody, getHeader, createError } from 'h3'
+import jwt from 'jsonwebtoken'
 
-export default defineSQLHandler(async (event) => {
-  // 1) достаём токен из заголовка
-  const authHeader = event.node.req.headers.authorization || ''
-  const token = authHeader.split(' ')[1]
-  if (!token) {
-    throw createError({ statusCode: 401, statusMessage: 'No token' })
+const SECRET = process.env.JWT_SECRET!
+
+export default defineWrappedResponseHandler(async (event) => {
+  // 1) Authentification
+  const authHeader = getHeader(event, 'authorization')
+  if (!authHeader) {
+    throw createError({ statusCode: 401, statusMessage: 'Authorization header required' })
   }
 
-  // 2) проверяем его
-  let payload: any
+  const token = authHeader.split(' ')[1]
+  let decoded: any
   try {
-    payload = await verifyJWT(token)
-    console.log('JWT payload', payload)
-  } catch (e) {
+    decoded = jwt.verify(token, SECRET)
+  } catch {
     throw createError({ statusCode: 401, statusMessage: 'Invalid token' })
   }
-  const userId = payload.id as number
+
+  const userId = decoded.id
   if (!userId) {
     throw createError({ statusCode: 401, statusMessage: 'Invalid payload' })
   }
 
-  // 3) читаем тело запроса
+  // 2) Corps de la requête
   const { forumId, titre, msg } = await readBody<{
-    forumId?: number; titre?: string; msg?: string
+    forumId?: number
+    titre?: string
+    msg?: string
   }>(event)
+
   if (!forumId || !titre || !msg) {
-    throw createError({ statusCode: 400, statusMessage: 'Missing fields' })
+    throw createError({ statusCode: 400, statusMessage: 'Champs requis manquants' })
   }
 
   const db = event.context.mysql
-  // 4) вставляем тему
+
+  // 3) Créer le sujet
   const [resSujet] = await db.execute<any>(
-    'INSERT INTO sujets (forum_id, titre, user_id) VALUES (?, ?, ?)',
-    [forumId, titre, userId]
+    'INSERT INTO sujets (forum_id, user_id, titre) VALUES (?, ?, ?)',
+    [forumId, userId, titre]
   )
+
   const sujetId = (resSujet as any).insertId
 
-  // 5) вставляем первый message
+  // 4) Ajouter le premier message
   await db.execute(
-    'INSERT INTO messages (sujet_id, contenu, user_id) VALUES (?, ?, ?)',
-    [sujetId, msg, userId]
+    'INSERT INTO messages (sujet_id, user_id, contenu) VALUES (?, ?, ?)',
+    [sujetId, userId, msg]
   )
 
   return { ok: true, id: sujetId }

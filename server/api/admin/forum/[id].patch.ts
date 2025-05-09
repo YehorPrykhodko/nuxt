@@ -1,19 +1,12 @@
-import { readBody, getHeader, createError, getRequestURL } from 'h3'
+import { readBody, getHeader, createError } from 'h3'
 import jwt from 'jsonwebtoken'
 import { jwtSecret } from '~/server/config/auth'
 import { defineWrappedResponseHandler } from '~/server/utils/mysql'
 
-console.log('[API] forums.put loaded')
-
 export default defineWrappedResponseHandler(async (event) => {
-  console.log(
-    '[API]',
-    event.method,
-    getRequestURL(event).toString(),
-    { params: event.context?.params, query: event.context?.query }
-  )
-
+  const { id } = event.context.params
   const authHeader = getHeader(event, 'Authorization')
+
   if (!authHeader) {
     throw createError({ statusCode: 401, statusMessage: 'Token requis' })
   }
@@ -30,13 +23,13 @@ export default defineWrappedResponseHandler(async (event) => {
     throw createError({ statusCode: 403, statusMessage: 'Accès refusé' })
   }
 
-  const body = await readBody<{ id?: number; nom?: string }>(event)
-  if (!body?.id || !body.nom) {
-    throw createError({ statusCode: 400, statusMessage: 'Paramètres manquants' })
+  const { nom } = await readBody(event)
+  if (!nom) {
+    throw createError({ statusCode: 400, statusMessage: 'Nom requis' })
   }
 
   const db = event.context.mysql
-  await db.execute('UPDATE forums SET nom = ? WHERE id = ?', [body.nom, body.id])
+  await db.execute('UPDATE forums SET nom = ? WHERE id = ?', [nom, id])
 
-  return { ok: true }
+  return { success: true }
 })

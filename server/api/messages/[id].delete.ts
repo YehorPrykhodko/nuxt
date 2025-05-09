@@ -1,27 +1,36 @@
-import { defineSQLHandler } from '~/server/utils/mysql'
-import { createError }      from 'h3'
-import { verifyJWT }        from '~/server/utils/jwt'
+// server/api/messages/[id].delete.ts
+import { defineWrappedResponseHandler } from '~/server/utils/mysql'
+import { getHeader, createError } from 'h3'
+import jwt from 'jsonwebtoken'
+import { jwtSecret } from '~/server/config/auth'
 
-export default defineSQLHandler(async (event) => {
-  // Аналогичная JWT-проверка
-  const authHeader = event.node.req.headers.authorization || ''
+export default defineWrappedResponseHandler(async (event) => {
+  const authHeader = getHeader(event, 'Authorization')
+  if (!authHeader) {
+    throw createError({ statusCode: 401, statusMessage: 'Authorization header required' })
+  }
+
   const token = authHeader.split(' ')[1]
-  if (!token) throw createError({ statusCode: 401, statusMessage: 'No token' })
-
-  let payload: any
+  let userId: number
   try {
-    payload = await verifyJWT(token)
-  } catch {
+    const decoded: any = jwt.verify(token, jwtSecret)
+    userId = decoded.id
+  } catch (err) {
     throw createError({ statusCode: 401, statusMessage: 'Invalid token' })
   }
-  const userId = payload.id
-  if (!userId) throw createError({ statusCode: 401, statusMessage: 'Invalid payload' })
 
-  // Удаляем сообщение
   const { id } = event.context.params
   const db = event.context.mysql
 
-  // По желанию можно удостовериться, что payload.id == user_id сообщения
-  await db.execute('DELETE FROM messages WHERE id = ?', [id])
+  // Удаляем сообщение, только если оно принадлежит пользователю
+  const [result] = await db.execute<any>(
+    'DELETE FROM messages WHERE id = ? AND user_id = ?',
+    [id, userId]
+  )
+
+  if (result.affectedRows === 0) {
+    throw createError({ statusCode: 403, statusMessage: 'Accès refusé' })
+  }
+
   return { success: true }
 })

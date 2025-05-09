@@ -1,42 +1,44 @@
-import { readBody, createError } from 'h3'
-import { defineSQLHandler }      from '~/server/utils/mysql'
-import { verifyJWT }             from '~/server/utils/jwt'
+// server/api/messages.post.ts
+import { defineWrappedResponseHandler } from '~/server/utils/mysql'
+import { readBody, getHeader, createError } from 'h3'
+import jwt from 'jsonwebtoken'
+import { jwtSecret } from '~/server/config/auth'
 
-export default defineSQLHandler(async (event) => {
-  // 1) Вытащить и проверить JWT
-  const authHeader = event.node.req.headers.authorization || ''
+export default defineWrappedResponseHandler(async (event) => {
+  const authHeader = getHeader(event, 'Authorization')
+  if (!authHeader) {
+    throw createError({ statusCode: 401, statusMessage: 'Authorization header required' })
+  }
+
   const token = authHeader.split(' ')[1]
-  if (!token) throw createError({ statusCode: 401, statusMessage: 'No token' })
-
-  let payload: any
+  let userId: number
   try {
-    payload = await verifyJWT(token)
-  } catch {
+    const decoded: any = jwt.verify(token, jwtSecret)
+    userId = decoded.id
+  } catch (err) {
     throw createError({ statusCode: 401, statusMessage: 'Invalid token' })
   }
-  const userId = payload.id
-  if (!userId) throw createError({ statusCode: 401, statusMessage: 'Invalid payload' })
 
-  // 2) Прочитать тело
   const { sujetId, contenu } = await readBody<{
     sujetId?: number
     contenu?: string
   }>(event)
+
   if (!sujetId || !contenu) {
-    throw createError({ statusCode: 400, statusMessage: 'Missing fields' })
+    throw createError({ statusCode: 400, statusMessage: 'Champs manquants' })
   }
 
-  // 3) Вставить сообщение
   const db = event.context.mysql
+
   await db.execute(
     'INSERT INTO messages (sujet_id, user_id, contenu) VALUES (?, ?, ?)',
     [sujetId, userId, contenu]
   )
-  // Обновить время последнего обновления темы
+
   await db.execute(
     'UPDATE sujets SET updated_at = NOW() WHERE id = ?',
     [sujetId]
   )
 
-  return { ok: true }
+  return { success: true }
 })
