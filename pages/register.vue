@@ -29,7 +29,7 @@ async function doRegister() {
     method: 'POST',
     body: { login: loginModel.value, password: passwordModel.value }
   })
-  // ensuite auto-login
+  //login
   const res = await $fetch('/api/login', {
     method: 'POST',
     body: { login: loginModel.value, password: passwordModel.value }

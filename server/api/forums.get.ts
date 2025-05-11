@@ -1,7 +1,7 @@
 import { defineWrappedResponseHandler } from '~/server/utils/mysql'
 
 export default defineWrappedResponseHandler(async (event) => {
-  console.log('[API] GET /api/forums', {
+  console.log('API GET /api/forums', {
     params: event.context.params,
     query:  event.context.query
   })

@@ -1,4 +1,3 @@
-// server/api/messages/[id].delete.ts
 import { defineWrappedResponseHandler } from '~/server/utils/mysql'
 import { getHeader, createError } from 'h3'
 import jwt from 'jsonwebtoken'
@@ -12,9 +11,12 @@ export default defineWrappedResponseHandler(async (event) => {
 
   const token = authHeader.split(' ')[1]
   let userId: number
+  let isAdmin = false
+
   try {
     const decoded: any = jwt.verify(token, jwtSecret)
     userId = decoded.id
+    isAdmin = decoded.role === 'admin'
   } catch (err) {
     throw createError({ statusCode: 401, statusMessage: 'Invalid token' })
   }
@@ -22,11 +24,19 @@ export default defineWrappedResponseHandler(async (event) => {
   const { id } = event.context.params
   const db = event.context.mysql
 
-  // Удаляем сообщение, только если оно принадлежит пользователю
-  const [result] = await db.execute<any>(
-    'DELETE FROM messages WHERE id = ? AND user_id = ?',
-    [id, userId]
-  )
+  let result
+
+  if (isAdmin) {
+    ;[result] = await db.execute<any>(
+      'DELETE FROM messages WHERE id = ?',
+      [id]
+    )
+  } else {
+    ;[result] = await db.execute<any>(
+      'DELETE FROM messages WHERE id = ? AND user_id = ?',
+      [id, userId]
+    )
+  }
 
   if (result.affectedRows === 0) {
     throw createError({ statusCode: 403, statusMessage: 'Accès refusé' })

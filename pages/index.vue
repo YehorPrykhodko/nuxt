@@ -8,7 +8,7 @@
       >
         <v-card class="ma-2">
           <v-card-title>
-            <NuxtLink :to="`/forum/${forum.id}`">Forum: {{ forum.nom }}</NuxtLink>
+            <NuxtLink :to="`/forum/${forum.id}`">Forum: {{ forum.name }}</NuxtLink>
           </v-card-title>
           <v-card-subtitle>
             {{ forum.sujets }} sujet{{ forum.sujets > 1 ? 's' : '' }}
@@ -24,7 +24,7 @@ import { useFetch } from '#imports'
 
 interface Forum {
   id: number
-  nom: string
+  name: string
   sujets: number
 }
 

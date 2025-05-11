@@ -109,10 +109,13 @@ function cancelEdit() {
 
 async function valideEdit(id: number) {
   await $fetch(`/api/messages/${id}`, {
-    method: 'PATCH',
-    credentials: 'include',
-    body: { contenu: editContenu.value }
-  })
+  method: 'PATCH',
+  headers: {
+    Authorization: `Bearer ${auth.token}`
+  },
+  body: { contenu: editContenu.value }
+})
+
   send('updateMessage', { sujetId })
   editId.value = null
   fetchSujet()

@@ -1,4 +1,3 @@
-// server/api/messages.get.ts
 import { defineWrappedResponseHandler } from '~/server/utils/mysql'
 import { getQuery, createError } from 'h3'
 

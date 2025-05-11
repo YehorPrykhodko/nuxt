@@ -1,4 +1,3 @@
-// server/utils/jwt.ts
 import jwt from 'jsonwebtoken'
 import { jwtSecret } from '~/server/config/auth'
 

@@ -1,56 +1,40 @@
-// server/api/sujets.post.ts
 import { defineWrappedResponseHandler } from '~/server/utils/mysql'
 import { readBody, getHeader, createError } from 'h3'
 import jwt from 'jsonwebtoken'
-
-const SECRET = process.env.JWT_SECRET!
+import { jwtSecret } from '~/server/config/auth'
 
 export default defineWrappedResponseHandler(async (event) => {
-  // 1) Authentification
   const authHeader = getHeader(event, 'authorization')
   if (!authHeader) {
-    throw createError({ statusCode: 401, statusMessage: 'Authorization header required' })
+    throw createError({ statusCode: 401, statusMessage: 'Token requis' })
   }
 
-  const token = authHeader.split(' ')[1]
-  let decoded: any
+  let payload: any
   try {
-    decoded = jwt.verify(token, SECRET)
+    const token = authHeader.split(' ')[1]
+    payload = jwt.verify(token, jwtSecret)
   } catch {
-    throw createError({ statusCode: 401, statusMessage: 'Invalid token' })
+    throw createError({ statusCode: 403, statusMessage: 'Token invalide' })
   }
 
-  const userId = decoded.id
-  if (!userId) {
-    throw createError({ statusCode: 401, statusMessage: 'Invalid payload' })
-  }
-
-  // 2) Corps de la requête
-  const { forumId, titre, msg } = await readBody<{
-    forumId?: number
-    titre?: string
-    msg?: string
-  }>(event)
+  const { forumId, titre, msg } = await readBody(event)
 
   if (!forumId || !titre || !msg) {
-    throw createError({ statusCode: 400, statusMessage: 'Champs requis manquants' })
+    throw createError({ statusCode: 400, statusMessage: 'Champs manquants' })
   }
 
   const db = event.context.mysql
 
-  // 3) Créer le sujet
-  const [resSujet] = await db.execute<any>(
+  const [res] = await db.execute(
     'INSERT INTO sujets (forum_id, user_id, titre) VALUES (?, ?, ?)',
-    [forumId, userId, titre]
+    [forumId, payload.id, titre]
   )
+  const sujetId = (res as any).insertId
 
-  const sujetId = (resSujet as any).insertId
-
-  // 4) Ajouter le premier message
   await db.execute(
     'INSERT INTO messages (sujet_id, user_id, contenu) VALUES (?, ?, ?)',
-    [sujetId, userId, msg]
+    [sujetId, payload.id, msg]
   )
 
-  return { ok: true, id: sujetId }
+  return { ok: true, sujetId }
 })

@@ -1,4 +1,3 @@
-// server/utils/mysql.ts
 import mysql from 'mysql2/promise'
 import bluebird from 'bluebird'
 import { defineEventHandler, type EventHandler, type EventHandlerRequest } from 'h3'
@@ -18,13 +17,12 @@ export const defineWrappedResponseHandler = <
         database: 'forum',
         Promise:  bluebird,
       })
-      // пушим соединение в контекст
+
       event.context.mysql = connection
       const response = await handler(event)
       await connection.end()
       return response
     } catch (err) {
-      // здесь можно централизованно логировать
-      return { error: true, details: err }
+      throw createError(err)
     }
   })

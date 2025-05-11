@@ -1,44 +1,35 @@
-// server/api/messages.post.ts
 import { defineWrappedResponseHandler } from '~/server/utils/mysql'
-import { readBody, getHeader, createError } from 'h3'
+import { readBody, createError, getHeader } from 'h3'
 import jwt from 'jsonwebtoken'
 import { jwtSecret } from '~/server/config/auth'
+import { broadcastMessage } from '~/server/routes/_ws'
 
 export default defineWrappedResponseHandler(async (event) => {
   const authHeader = getHeader(event, 'Authorization')
   if (!authHeader) {
-    throw createError({ statusCode: 401, statusMessage: 'Authorization header required' })
+    throw createError({ statusCode: 401, statusMessage: 'Token requis' })
   }
 
   const token = authHeader.split(' ')[1]
-  let userId: number
+  let payload: any
   try {
-    const decoded: any = jwt.verify(token, jwtSecret)
-    userId = decoded.id
-  } catch (err) {
-    throw createError({ statusCode: 401, statusMessage: 'Invalid token' })
+    payload = jwt.verify(token, jwtSecret)
+  } catch {
+    throw createError({ statusCode: 403, statusMessage: 'Token invalide' })
   }
 
-  const { sujetId, contenu } = await readBody<{
-    sujetId?: number
-    contenu?: string
-  }>(event)
-
+  const { sujetId, contenu } = await readBody(event)
   if (!sujetId || !contenu) {
-    throw createError({ statusCode: 400, statusMessage: 'Champs manquants' })
+    throw createError({ statusCode: 400, statusMessage: 'Champs requis' })
   }
 
   const db = event.context.mysql
-
   await db.execute(
     'INSERT INTO messages (sujet_id, user_id, contenu) VALUES (?, ?, ?)',
-    [sujetId, userId, contenu]
+    [sujetId, payload.id, contenu]
   )
 
-  await db.execute(
-    'UPDATE sujets SET updated_at = NOW() WHERE id = ?',
-    [sujetId]
-  )
+  broadcastMessage(JSON.stringify({ type: 'newMessage', payload: { sujetId } }))
 
   return { success: true }
 })

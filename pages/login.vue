@@ -37,7 +37,7 @@ async function doLogin() {
     auth.login(user, token)
     router.push('/')
   } catch (err: any) {
-    console.error('[LOGIN ERROR]', err?.data || err)
+    console.error('LOGIN ERROR', err?.data || err)
     alert(err?.data?.message || err?.message || 'Erreur lors de la connexion')
   }
 }

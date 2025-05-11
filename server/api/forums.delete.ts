@@ -3,11 +3,11 @@ import jwt from 'jsonwebtoken'
 import { jwtSecret } from '~/server/config/auth'
 import { defineWrappedResponseHandler } from '~/server/utils/mysql'
 
-console.log('[API] forums.delete loaded')
+console.log('API forums.delete')
 
 export default defineWrappedResponseHandler(async (event) => {
   console.log(
-    '[API]',
+    'API',
     event.method,
     getRequestURL(event).toString(),
     { params: event.context?.params, query: event.context?.query }

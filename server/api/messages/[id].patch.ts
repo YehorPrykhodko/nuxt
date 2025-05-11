@@ -1,4 +1,3 @@
-// server/api/messages/[id].patch.ts
 import { defineWrappedResponseHandler } from '~/server/utils/mysql'
 import { readBody, getHeader, createError } from 'h3'
 import jwt from 'jsonwebtoken'
@@ -12,9 +11,12 @@ export default defineWrappedResponseHandler(async (event) => {
 
   const token = authHeader.split(' ')[1]
   let userId: number
+  let isAdmin = false
+
   try {
     const decoded: any = jwt.verify(token, jwtSecret)
     userId = decoded.id
+    isAdmin = decoded.role === 'admin'
   } catch (err) {
     throw createError({ statusCode: 401, statusMessage: 'Invalid token' })
   }
@@ -28,12 +30,22 @@ export default defineWrappedResponseHandler(async (event) => {
 
   const db = event.context.mysql
 
-  // Дополнительно можно проверить владельца сообщения, если потребуется
+  let result
+  if (isAdmin) {
+    [result] = await db.execute<any>(
+      'UPDATE messages SET contenu = ? WHERE id = ?',
+      [contenu, id]
+    )
+  } else {
+    [result] = await db.execute<any>(
+      'UPDATE messages SET contenu = ? WHERE id = ? AND user_id = ?',
+      [contenu, id, userId]
+    )
+  }
 
-  await db.execute(
-    'UPDATE messages SET contenu = ? WHERE id = ? AND user_id = ?',
-    [contenu, id, userId]
-  )
+  if (result.affectedRows === 0) {
+    throw createError({ statusCode: 403, statusMessage: 'Accès refusé' })
+  }
 
   return { success: true }
 })

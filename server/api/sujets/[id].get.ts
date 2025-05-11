@@ -1,4 +1,3 @@
-// server/api/sujets/[id].get.ts
 import { defineWrappedResponseHandler } from '~/server/utils/mysql'
 import { createError } from 'h3'
 

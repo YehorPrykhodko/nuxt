@@ -1,9 +1,7 @@
-// server/api/sujets/[id].patch.ts
 import { defineWrappedResponseHandler } from '~/server/utils/mysql'
 import { readBody, getHeader, createError } from 'h3'
 import jwt from 'jsonwebtoken'
-
-const SECRET = process.env.JWT_SECRET!
+import { jwtSecret } from '~/server/config/auth'
 
 export default defineWrappedResponseHandler(async (event) => {
   const sujetId = Number(event.context.params.id)
@@ -19,7 +17,7 @@ export default defineWrappedResponseHandler(async (event) => {
   const token = authHeader.split(' ')[1]
   let decoded: any
   try {
-    decoded = jwt.verify(token, SECRET)
+    decoded = jwt.verify(token, jwtSecret)
   } catch {
     throw createError({ statusCode: 401, statusMessage: 'Invalid token' })
   }

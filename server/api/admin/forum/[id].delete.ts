@@ -25,16 +25,16 @@ export default defineWrappedResponseHandler(async (event) => {
 
   const db = event.context.mysql
 
-  // Supprimer les messages liés
+  // supprimer les messages
   await db.execute(`
     DELETE FROM messages 
     WHERE sujet_id IN (SELECT id FROM sujets WHERE forum_id = ?)
   `, [id])
 
-  // Supprimer les sujets
+  // supprimer les sujets
   await db.execute(`DELETE FROM sujets WHERE forum_id = ?`, [id])
 
-  // Supprimer le forum
+  // supprimer le forum
   await db.execute(`DELETE FROM forums WHERE id = ?`, [id])
 
   return { success: true }
