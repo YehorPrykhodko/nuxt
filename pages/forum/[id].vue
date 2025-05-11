@@ -50,60 +50,60 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { useFetch } from '#imports'
-import { useAuthStore } from '~/stores/authStore'
-import { useWs } from '~/composables/useWs'
+import { ref, onMounted, watch, computed } from "vue";
+import { useRoute } from "vue-router";
+import { useFetch } from "#imports";
+import { useAuthStore } from "~/stores/authStore";
+import { useWs } from "~/composables/useWs";
 
-const auth = useAuthStore()
-const user = computed(() => auth.user)
+const auth = useAuthStore();
+const user = computed(() => auth.user);
 
-const route = useRoute()
-const forumId = Number(route.params.id)
+const route = useRoute();
+const forumId = Number(route.params.id);
 
-const forumNom = ref('…chargement…')
-const sujets = ref<any[]>([])
-const titre  = ref('')
-const msg    = ref('')
-const dialog = ref(false)
+const forumNom = ref("…chargement…");
+const sujets = ref<any[]>([]);
+const titre = ref("");
+const msg = ref("");
+const dialog = ref(false);
 
-const { connect, send, lastEvent } = useWs()
+const { connect, send, lastEvent } = useWs();
 
 onMounted(async () => {
-  connect()
-  await reload()
-})
+  connect();
+  await reload();
+});
 
-watch(lastEvent, evt => {
-  if (evt?.type === 'newSujet' && evt.payload.forumId === forumId) {
-    reload()
+watch(lastEvent, (evt) => {
+  if (evt?.type === "newSujet" && evt.payload.forumId === forumId) {
+    reload();
   }
-})
+});
 
 async function reload() {
-  const res: any = await $fetch(`/api/forums/${forumId}`)
-  forumNom.value = res.nom
-  sujets.value = res.sujets
+  const res: any = await $fetch(`/api/forums/${forumId}`);
+  forumNom.value = res.nom;
+  sujets.value = res.sujets;
 }
 
 async function createSujet() {
-  await $fetch('/api/sujets', {
-    method: 'POST',
+  await $fetch("/api/sujets", {
+    method: "POST",
     headers: {
-      Authorization: `Bearer ${auth.token}`
+      Authorization: `Bearer ${auth.token}`,
     },
     body: {
       forumId,
       titre: titre.value,
-      msg:   msg.value
-    }
-  })
-  titre.value = ''
-  msg.value = ''
-  dialog.value = false
-  send('newSujet', { forumId })
-  reload()
+      msg: msg.value,
+    },
+  });
+  titre.value = "";
+  msg.value = "";
+  dialog.value = false;
+  send("newSujet", { forumId });
+  reload();
 }
 </script>
 

@@ -46,90 +46,90 @@
 
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { useAuthStore } from '~/stores/authStore'
-import { useWs } from '~/composables/useWs'
+import { ref, onMounted, computed } from "vue";
+import { useRoute } from "vue-router";
+import { useAuthStore } from "~/stores/authStore";
+import { useWs } from "~/composables/useWs";
 
-const auth = useAuthStore()
-const session = computed(() => auth.user)
+const auth = useAuthStore();
+const session = computed(() => auth.user);
 
-const route = useRoute()
-const sujetId = Number(route.params.id)
+const route = useRoute();
+const sujetId = Number(route.params.id);
 
-const titreSujet = ref('')
-const messages = ref<any[]>([])
-const nouveauMsg = ref('')
-const editId = ref<number | null>(null)
-const editContenu = ref('')
+const titreSujet = ref("");
+const messages = ref<any[]>([]);
+const nouveauMsg = ref("");
+const editId = ref<number | null>(null);
+const editContenu = ref("");
 
-const { connect, send, lastEvent } = useWs()
+const { connect, send, lastEvent } = useWs();
 
 async function fetchSujet() {
-  const res: any = await $fetch(`/api/sujets/${sujetId}`)
-  titreSujet.value = res.titre
-  messages.value = res.messages
+  const res: any = await $fetch(`/api/sujets/${sujetId}`);
+  titreSujet.value = res.titre;
+  messages.value = res.messages;
 }
 
 onMounted(async () => {
-  connect()
-  await fetchSujet()
-})
+  connect();
+  await fetchSujet();
+});
 
-watch(lastEvent, evt => {
+watch(lastEvent, (evt) => {
   if (
-    ['newMessage', 'updateMessage', 'deleteMessage'].includes(evt?.type!) &&
+    ["newMessage", "updateMessage", "deleteMessage"].includes(evt?.type!) &&
     evt.payload.sujetId === sujetId
   ) {
-    fetchSujet()
+    fetchSujet();
   }
-})
+});
 
 async function postMsg() {
-  await $fetch('/api/messages', {
-    method: 'POST',
+  await $fetch("/api/messages", {
+    method: "POST",
     headers: {
-      Authorization: `Bearer ${auth.token}`
+      Authorization: `Bearer ${auth.token}`,
     },
-    body: { sujetId, contenu: nouveauMsg.value }
-  })
-  send('newMessage', { sujetId })
-  nouveauMsg.value = ''
+    body: { sujetId, contenu: nouveauMsg.value },
+  });
+  send("newMessage", { sujetId });
+  nouveauMsg.value = "";
 }
 
 function startEdit(m: any) {
-  editId.value = m.id
-  editContenu.value = m.contenu
+  editId.value = m.id;
+  editContenu.value = m.contenu;
 }
 
 function cancelEdit() {
-  editId.value = null
-  editContenu.value = ''
+  editId.value = null;
+  editContenu.value = "";
 }
 
 async function valideEdit(id: number) {
   await $fetch(`/api/messages/${id}`, {
-  method: 'PATCH',
-  headers: {
-    Authorization: `Bearer ${auth.token}`
-  },
-  body: { contenu: editContenu.value }
-})
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+    },
+    body: { contenu: editContenu.value },
+  });
 
-  send('updateMessage', { sujetId })
-  editId.value = null
-  fetchSujet()
+  send("updateMessage", { sujetId });
+  editId.value = null;
+  fetchSujet();
 }
 
 async function supprimeMsg(id: number) {
   await $fetch(`/api/messages/${id}`, {
-    method: 'DELETE',
+    method: "DELETE",
     headers: {
-      Authorization: `Bearer ${auth.token}`
-    }
-  })
-  send('deleteMessage', { sujetId })
-  fetchSujet()
+      Authorization: `Bearer ${auth.token}`,
+    },
+  });
+  send("deleteMessage", { sujetId });
+  fetchSujet();
 }
 </script>
 

@@ -9,7 +9,7 @@
         label="Mot de passe"
         required
       />
-      <v-btn type="submit">S'inscrire</v-btn>
+      <v-btn type="submit" color="primary">S'inscrire</v-btn>
     </v-form>
   </v-container>
 </template>
